@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>호랑국어 모바일 문법</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .form-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
+        input[type="text"] {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        h1 {
+            background: linear-gradient(135deg, #2c3e50, #34495e, #4b79a1);
+            color: #ffffff;
+            padding: 15px;
+            font-size: 25px;
+            margin-bottom: 10px;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 7px 8px rgb(0, 0, 0);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        h2 {
+            color: #2e3c4c; /* 차분한 그레이블루 */
+            font-size: 20px;
+            font-weight: 600; /* 적당한 굵기로 강조 */
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #d1d8e0; /* 부드러운 하단 선 강조 */
+            letter-spacing: 1px;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>호랑국어 모바일 문법</h1>
+        <h2>세종어제훈민정음</h2>
+        <h3>자신의 이름과<br>비밀번호를 입력하세요.</h3>
+        <form id="studentForm">
+            <input type="text" id="studentName" placeholder="이름" required>
+            <input type="text" id="studentId" placeholder="비밀번호" required>
+            <button type="submit">시작</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('studentForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // 기본 제출 방지
+      // 폼 제출 시 서버로 데이터를 전송
+            // 학생 이름과 고유번호 가져오기
+            const studentName = document.getElementById('studentName').value;
+            const studentId = document.getElementById('studentId').value;
+
+            // 세션 스토리지에 학생 정보 저장
+            sessionStorage.setItem('studentName', studentName);
+            sessionStorage.setItem('studentId', studentId);
+
+                    setTimeout(() => {
+                        window.location.href = 'question.html'; // 문제 풀이 화면으로 이동
+                    }, 500); // 500ms 딜레이
+                
+                })
+    </script>
+</body>
+</html>

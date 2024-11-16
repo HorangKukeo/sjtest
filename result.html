@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학생 통계</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            margin: 10px;
+            width: 100%;
+            max-width: 300px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 20px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            border-collapse: collapse;
+            font-size: 16px;
+        }
+
+        table, th, td {
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+
+        th, td {
+            padding: 12px;
+        }
+
+        th {
+            background-color: #f0f8ff;
+            color: #333;
+            font-weight: bold;
+        }
+
+        td {
+            background-color: #fff;
+        }
+
+        #scoreChart {
+            max-width: 600px;
+            margin-top: 40px;
+        }
+
+        /* 반응형 스타일 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            input[type="text"], button, table {
+                width: 90%;
+                max-width: none;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <h1>학생 통계</h1>
+    <input type="text" id="studentName" placeholder="학생 이름">
+    <input type="text" id="studentId" placeholder="고유 번호">
+    <button onclick="loadStudentData()">통계 보기</button>
+
+    <div id="result"></div>
+    <canvas id="scoreChart"></canvas>
+
+    <script>
+        let chartInstance = null;  // 전역 변수를 사용하여 차트 인스턴스를 저장
+
+        // 엑셀 데이터를 불러와서 학생의 통계를 보여줌
+        async function loadExcelData(studentName, studentId) {
+            try {
+                const response = await fetch('qdb.xlsm'); // 엑셀 파일 로드
+                const data = await response.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                // 첫 번째 시트 데이터 가져오기
+                const firstSheet = workbook.Sheets[workbook.SheetNames[2]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                // 학생 데이터 찾기
+                const studentData = findStudentData(jsonData, studentName, studentId);
+                if (!studentData) {
+                    alert('학생 정보를 찾을 수 없습니다.');
+                    return;
+                }
+
+                displayStudentData(studentData);
+            } catch (error) {
+                console.error("엑셀 데이터를 불러오는 중 오류 발생:", error);
+            }
+        }
+
+        // 학생 데이터 찾기 함수
+        function findStudentData(data, studentName, studentId) {
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row[0] === studentName && row[1].toString() === studentId.toString()) {
+                    return row; // 학생 데이터 반환
+                }
+            }
+            return null;
+        }
+
+        // 학생 데이터를 테이블과 그래프로 표시
+        function displayStudentData(studentData) {
+            const resultContainer = document.getElementById('result');
+            resultContainer.innerHTML = ''; // 기존 데이터를 초기화
+
+            // 회차별 점수를 테이블로 출력
+            let tableHtml = '<table><tr><th>회차</th><th>총 문제수</th><th>득점</th><th>점수</th></tr>';
+            for (let i = 2; i < studentData.length; i += 3) {
+                tableHtml += `<tr><td>${(i - 2) / 3 + 1}회차</td><td>${studentData[i]}</td><td>${studentData[i + 1]}</td><td>${studentData[i + 2]}</td></tr>`;
+            }
+            tableHtml += '</table>';
+            resultContainer.innerHTML = tableHtml;
+
+            // 점수 변화를 그래프로 시각화
+            const labels = [];
+            const scores = [];
+            for (let i = 2; i < studentData.length; i += 3) {
+                labels.push(`${(i - 2) / 3 + 1}회차`);
+                scores.push(studentData[i + 2]);
+            }
+
+            renderChart(labels, scores);
+        }
+
+        // Chart.js를 사용하여 그래프 그리기
+        function renderChart(labels, data) {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+
+            // 기존 차트가 있을 경우 먼저 삭제
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // 새로운 차트를 생성
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '점수 변화',
+                        data: data,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100 // y축 최대값을 100으로 고정
+                        }
+                    }
+                }
+            });
+        }
+
+        // 학생 데이터를 로드하는 함수
+        function loadStudentData() {
+            const studentName = document.getElementById('studentName').value;
+            const studentId = document.getElementById('studentId').value;
+            loadExcelData(studentName, studentId);
+        }
+    </script>
+</body>
+</html>
